@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
@@ -26,3 +27,15 @@ class Edificacion(models.Model):
     def __str__(self): 
         return self.direccion
 
+
+
+class Comentario(models.Model):
+    calificacion = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    texto = models.CharField(max_length=200, null=True)
+    edificacion = models.ForeignKey(Edificacion, on_delete=models.CASCADE, related_name='comentarios')
+    active = models.BooleanField(default=True)
+    fecha_creado = models.DateTimeField(auto_now_add=True)
+    fecha_actualizado = models.DateTimeField(auto_now=True)  
+    
+    def __str__(self):
+        return str(self.calificacion) + " " + self.edificacion.direccion

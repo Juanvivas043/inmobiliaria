@@ -1,15 +1,21 @@
 from rest_framework import serializers
-from inmuebleslist_app.models import Edificacion, Empresa
+from inmuebleslist_app.models import Edificacion, Empresa, Comentario
 
 #Serializers usando ModelSerializer}
 
+class ComentarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comentario
+        fields = '__all__'
+
 class EdificacionSerializer(serializers.ModelSerializer):
+    comentarios = ComentarioSerializer(many=True, read_only=True)
     #longitud_direccion = serializers.SerializerMethodField()
     
     class Meta:
         model = Edificacion
         fields = "__all__"
-        read_only_fields = ['fecha_creado', 'id', 'longitud_direccion']
+        read_only_fields = ['fecha_creado', 'id']
         #fields = ['direccion', 'longitud_direccion' ,'pais', 'descripcion', 'imagen', 'fecha_creado', 'active']
         #exclude = ['id']
         
@@ -29,7 +35,6 @@ class EmpresaSerializer(serializers.HyperlinkedModelSerializer):
         model = Empresa
         fields = "__all__"
         read_only_fields = ['id', 'fecha_creado']
-
 
 
 

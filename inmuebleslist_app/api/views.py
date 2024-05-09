@@ -1,11 +1,30 @@
-from inmuebleslist_app.models import Edificacion, Empresa
-from inmuebleslist_app.api.serializers import EdificacionSerializer, EmpresaSerializer
+from inmuebleslist_app.models import Edificacion, Empresa, Comentario
+from inmuebleslist_app.api.serializers import EdificacionSerializer, EmpresaSerializer, ComentarioSerializer
 from rest_framework.response import Response
 #from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework import generics, mixins
 
+#Clases con mixins y generic views
 
+class ComentarioList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
+    queryset = Comentario.objects.all()
+    serializer_class = ComentarioSerializer
+    
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+class ComentarioDetail(mixins.RetrieveModelMixin, generics.GenericAPIView):
+    queryset = Comentario.objects.all()
+    serializer_class = ComentarioSerializer
+    
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+    
 #Clases con Api Views
 
 class EmpresaListAV(APIView):
@@ -24,7 +43,7 @@ class EmpresaListAV(APIView):
         else: 
             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EmpresaDetailAV(APIView):
+class EmpresaDetailAV(APIView): 
 
     def get(self, request, pk):
         try:
@@ -45,7 +64,7 @@ class EmpresaDetailAV(APIView):
             deserializer.save()
             return Response(deserializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(deserializer.erros, status=status.HTTP_400_BAD_REQUEST)
+            return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request, pk):
         try:
