@@ -7,6 +7,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comentario
         fields = '__all__'
+        read_only_fields = 'edificacion'
 
 class EdificacionSerializer(serializers.ModelSerializer):
     comentarios = ComentarioSerializer(many=True, read_only=True)

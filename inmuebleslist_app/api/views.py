@@ -6,24 +6,28 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import generics, mixins
 
-#Clases con mixins y generic views
+#Clases con generics views
 
-class ComentarioList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
-    queryset = Comentario.objects.all()
+class ComentarioList(generics.ListAPIView):
+    # queryset = Comentario.objects.all()
     serializer_class = ComentarioSerializer
     
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-    
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+    def get_queryset(self):
+        pk = self.kwargs['pk']
+        return Comentario.objects.filter(edificacion=pk)
 
-class ComentarioDetail(mixins.RetrieveModelMixin, generics.GenericAPIView):
-    queryset = Comentario.objects.all()
+class ComentarioCreate(generics.CreateAPIView):
     serializer_class = ComentarioSerializer
     
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+    def perform_create(self, serializer):
+        pk = self.kwargs['pk']
+        edificacion = Edificacion.objects.get(pk=pk)
+        serializer.save(edificacion=edificacion)
+        
+
+class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comentario.objects.all()
+    serializer_class = ComentarioSerializer
     
 #Clases con Api Views
 
@@ -89,7 +93,6 @@ class EdificacionListAV(APIView):
         else: 
             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class EdificacionDetailAV(APIView):
     
     def get(self, request, pk):
@@ -126,8 +129,7 @@ class EdificacionDetailAV(APIView):
 
 
 
-
-
+ 
 # Decorators Api Views
 """ @api_view(['GET', 'POST'])
 def inmueble_list(request):
