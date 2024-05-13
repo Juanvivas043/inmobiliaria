@@ -1,13 +1,14 @@
 from rest_framework import serializers
 from inmuebleslist_app.models import Edificacion, Empresa, Comentario
 
-#Serializers usando ModelSerializer}
+#Serializers usando ModelSerializer
 
 class ComentarioSerializer(serializers.ModelSerializer):
+    comentario_user = serializers.StringRelatedField(read_only=True)
     class Meta:
         model = Comentario
-        fields = '__all__'
-        read_only_fields = 'edificacion'
+        fields = ['id', 'calificacion', 'texto', 'edificacion', 'active', 'fecha_creado', 'fecha_actualizado', 'comentario_user']
+        read_only_fields = ['id', 'edificacion', 'fecha_creado', 'fecha_actualizado', 'comentario_user']
 
 class EdificacionSerializer(serializers.ModelSerializer):
     comentarios = ComentarioSerializer(many=True, read_only=True)
@@ -15,8 +16,8 @@ class EdificacionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Edificacion
-        fields = "__all__"
-        read_only_fields = ['fecha_creado', 'id']
+        fields = ['id' ,'direccion', 'pais', 'descripcion', 'fecha_creado', 'active', 'empresa', 'comentarios', 'avg_calificacion', 'number_calificacion']
+        read_only_fields = ['id', 'fecha_creado', 'empresa', 'comentarios', 'avg_calificacion', 'number_calificacion']
         #fields = ['direccion', 'longitud_direccion' ,'pais', 'descripcion', 'imagen', 'fecha_creado', 'active']
         #exclude = ['id']
         
@@ -24,9 +25,7 @@ class EdificacionSerializer(serializers.ModelSerializer):
     #     catnidad_caracteres = len(object.direccion)
     #     return catnidad_caracteres
 
-
-
-class EmpresaSerializer(serializers.HyperlinkedModelSerializer):
+class EmpresaSerializer(serializers.ModelSerializer):
     edificacionlist = EdificacionSerializer(many=True, read_only=True)
     #edificacionlist = serializers.StringRelatedField(many=True)
     #edificacionlist = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -34,14 +33,9 @@ class EmpresaSerializer(serializers.HyperlinkedModelSerializer):
     
     class Meta:
         model = Empresa
-        fields = "__all__"
-        read_only_fields = ['id', 'fecha_creado']
-
-
-
-
-
-
+        fields = ['id', 'nombre', 'website', 'fecha_creado', 'active', 'edificacionlist']
+        read_only_fields = ['id', 'fecha_creado', 'edificacionlist']
+        
 #Serializers usando modulo serializers
 
 #validaciones fuera de la clase
