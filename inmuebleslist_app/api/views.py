@@ -8,18 +8,18 @@ from rest_framework import generics, mixins, viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from inmuebleslist_app.api.permissions import AdminOrReadOnly, ComentarioUserOrReadOnly
-
-
+from inmuebleslist_app.api.permissions import IsAdminOrReadOnly, IsComentarioUserOrReadOnly
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle, ScopedRateThrottle
+from inmuebleslist_app.api.throttling import ComentarioCreateThrottle, ComentarioListThrottle
 
 
 
 #Clases con Modelviewset
 
-class EmpresaVS(viewsets.ModelViewSet):
-    permission_classes = [AdminOrReadOnly]
-    queryset = Empresa.objects.all()
-    serializer_class = EmpresaSerializer
+# class EmpresaVS(viewsets.ModelViewSet):
+#     #permission_classes = [AdminOrReadOnly]
+#     queryset = Empresa.objects.all()
+#     serializer_class = EmpresaSerializer
 
 # Clases con ViewSets
 
@@ -68,97 +68,161 @@ class EmpresaVS(viewsets.ModelViewSet):
                 
 #Clases con generics views
 
-class ComentarioList(generics.ListAPIView):
-    # queryset = Comentario.objects.all()
-    serializer_class = ComentarioSerializer
-    permission_classes = [IsAuthenticated]
+# class ComentarioList(generics.ListAPIView):
+#     # queryset = Comentario.objects.all()
+#     serializer_class = ComentarioSerializer
+#     #permission_classes = [IsAuthenticated]
     
-    def get_queryset(self):
-        pk = self.kwargs['pk']
-        return Comentario.objects.filter(edificacion=pk)
+#     def get_queryset(self):
+#         pk = self.kwargs['pk']
+#         return Comentario.objects.filter(edificacion=pk)
 
-class ComentarioCreate(generics.CreateAPIView):
-    serializer_class = ComentarioSerializer
+# class ComentarioCreate(generics.CreateAPIView):
+#     serializer_class = ComentarioSerializer
     
-    def get_queryset(self):
-        return Comentario.objects.all()
+#     def get_queryset(self):
+#         return Comentario.objects.all()
     
-    def perform_create(self, serializer):
-        pk = self.kwargs['pk']
-        edificacion = Edificacion.objects.get(pk=pk)
+#     def perform_create(self, serializer):
+#         pk = self.kwargs['pk']
+#         edificacion = Edificacion.objects.get(pk=pk)
         
-        user = self.request.user
-        comentario_queryset =Comentario.objects.filter(edificacion=edificacion, comentario_user=user)
-        if comentario_queryset.exists():
-            raise ValidationError('El usuario ya escribio un comentario para este inmueble')
+#         user = self.request.user
+#         comentario_queryset =Comentario.objects.filter(edificacion=edificacion, comentario_user=user)
+#         if comentario_queryset.exists():
+#             raise ValidationError('El usuario ya escribio un comentario para este inmueble')
         
         
-        if edificacion.number_calificacion == 0:
-            edificacion.avg_calificacion = serializer.validated_data['calificacion'] 
-        else: 
-            edificacion.avg_calificacion = (serializer.validated_data['calificacion']  + edificacion.avg_calificacion)/2
-        
-        edificacion.number_calificacion = edificacion.number_calificacion + 1
-        edificacion.save()
-        
-        serializer.save(edificacion=edificacion, comentario_user=user)
-
-        
-class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [ComentarioUserOrReadOnly]
-    queryset = Comentario.objects.all()
-    serializer_class = ComentarioSerializer
-    
-#Clases con Api Views
-
-# class EmpresaListAV(APIView):
-#     def get(self, request):
-#         empresa = Empresa.objects.all()
-#         #serializer = EmpresaSerializer(empresa, many=True, context={'request':request})
-#         serializer = EmpresaSerializer(empresa, many=True, context={'request':request})
-
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-#     def post(self, request):
-#         deserializer = EmpresaSerializer(data=request.data)
-#         if deserializer.is_valid(): 
-#             deserializer.save()
-#             return Response(deserializer.data, status=status.HTTP_201_CREATED)
+#         if edificacion.number_calificacion == 0:
+#             edificacion.avg_calificacion = serializer.validated_data['calificacion'] 
 #         else: 
-#             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# class EmpresaDetailAV(APIView): 
-
-#     def get(self, request, pk):
-#         try:
-#             empresa = Empresa.objects.get(pk=pk)
-#         except Empresa.DoesNotExist:
-#             return Response({'Error':'No existe la empresa'}, status=status.HTTP_404_NOT_FOUND)
+#             edificacion.avg_calificacion = (serializer.validated_data['calificacion']  + edificacion.avg_calificacion)/2
         
-#         serializer = EmpresaSerializer(empresa, context={'request':request})
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+#         edificacion.number_calificacion = edificacion.number_calificacion + 1
+#         edificacion.save()
+        
+#         serializer.save(edificacion=edificacion, comentario_user=user)
+        
+# class ComentarioDetail(generics.RetrieveUpdateDestroyAPIView):
+#     #permission_classes = [ComentarioUserOrReadOnly]
+#     queryset = Comentario.objects.all()
+#     serializer_class = ComentarioSerializer
     
-#     def put(self, request, pk):
-#         try:
-#             empresa = Empresa.objects.get(pk=pk)
-#         except Empresa.DoesNotExist:
-#             return Response({'Error':'La empresa no existe'}, status=status.HTTP_404_NOT_FOUND)
-#         deserializer = EmpresaSerializer(empresa, data=request.data, context={'request':request})
-#         if deserializer.is_valid():
-#             deserializer.save()
-#             return Response(deserializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Clases con Api Views
+
+class ComentarioListAV(APIView): 
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ComentarioListThrottle, AnonRateThrottle]
+
+    
+    def get(self, request, pk):
+        comentario = Comentario.objects.filter(edificacion=pk)
+        serializer = ComentarioSerializer(comentario, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ComentarioCreateAV(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ComentarioCreateThrottle]
+    
+    def post(self, request, pk):
         
-#     def delete(self, request, pk):
-#         try:
-#             empresa = Empresa.objects.get(pk=pk)
-#         except Empresa.DoesNotExist:
-#             return Response({'Error':'La empresa no existe'}, status=status.HTTP_404_NOT_FOUND)
-#         empresa.delete()
-#         return Response({'Success':'Se ha eliminado la empresa correctamente'}, status=status.HTTP_204_NO_CONTENT)
+        serializer = ComentarioSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            
+            edificacion = Edificacion.objects.get(pk=pk)
+            
+            user = request.user
+            comentario_queryset = Comentario.objects.filter(edificacion=edificacion, comentario_user=user)
+            if comentario_queryset.exists():
+                raise ValidationError('El usuario ya escribio un comentario para este inmueble')
+            
+            if edificacion.number_calificacion == 0:
+                edificacion.avg_calificacion = serializer.validated_data['calificacion'] 
+            else: 
+                edificacion.avg_calificacion = (serializer.validated_data['calificacion']  + edificacion.avg_calificacion)/2
+            
+            edificacion.number_calificacion = edificacion.number_calificacion + 1
+            edificacion.save()
+            
+            serializer.save(edificacion=edificacion, comentario_user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ComentarioDetailAV(APIView):
+    permission_classes = [IsComentarioUserOrReadOnly]
+    throttle_classes = [ScopedRateThrottle] 
+    throttle_scope = 'comentario-detail'
+    
+    def get(self, request, pk):
+        try:
+            comentario = Comentario.objects.get(pk=pk)
+        except: 
+            return Response({'error':'El comentario no existe'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ComentarioSerializer(comentario)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, pk):
+        comentario = Comentario.objects.get(pk=pk)
+        serializer = ComentarioSerializer(comentario, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request, pk):
+        comentario = Comentario.objects.get(pk=pk)
+        comentario.delete()
+        return Response({'success':'Se ha eliminado el comentario'}, status=status.HTTP_204_NO_CONTENT)
+
+class EmpresaListAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+    
+    def get(self, request):
+        empresa = Empresa.objects.all()
+        #serializer = EmpresaSerializer(empresa, many=True, context={'request':request})
+        serializer = EmpresaSerializer(empresa, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        deserializer = EmpresaSerializer(data=request.data)
+        if deserializer.is_valid(): 
+            deserializer.save()
+            return Response(deserializer.data, status=status.HTTP_201_CREATED)
+        else: 
+            return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class EmpresaDetailAV(APIView): 
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get(self, request, pk):
+        try:
+            empresa = Empresa.objects.get(pk=pk)
+        except Empresa.DoesNotExist:
+            return Response({'Error':'No existe la empresa'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = EmpresaSerializer(empresa)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, pk):
+        empresa = Empresa.objects.get(pk=pk)
+        deserializer = EmpresaSerializer(empresa, data=request.data)
+        if deserializer.is_valid():
+            deserializer.save()
+            return Response(deserializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, request, pk):
+        empresa = Empresa.objects.get(pk=pk)
+        empresa.delete()
+        return Response({'Success':'Se ha eliminado la empresa correctamente'}, status=status.HTTP_204_NO_CONTENT)
 
 class EdificacionListAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
 
     def get(self, request):
         edificacion = Edificacion.objects.all() 
@@ -174,7 +238,8 @@ class EdificacionListAV(APIView):
             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class EdificacionDetailAV(APIView):
-    
+    permission_classes = [IsAdminOrReadOnly]
+
     def get(self, request, pk):
         try:
             edificacion = Edificacion.objects.get(pk=pk)
@@ -185,11 +250,7 @@ class EdificacionDetailAV(APIView):
         return Response (serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk):
-        try:
-            edificacion = Edificacion.objects.get(pk=pk)
-        except Edificacion.DoesNotExist:
-            return Response({'Error':'No existe la edificacion'}, status=status.HTTP_404_NOT_FOUND)
-        
+        edificacion = Edificacion.objects.get(pk=pk)
         deserializer = EdificacionSerializer(edificacion, data=request.data)
         if deserializer.is_valid():
             deserializer.save()
@@ -198,11 +259,7 @@ class EdificacionDetailAV(APIView):
             return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request, pk):
-        try:
-            edificacion = Edificacion.objects.get(pk=pk)
-        except Edificacion.DoesNotExist:
-            return Response({'Error':'La edificacion no se puede eliminar el inmueble'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        edificacion = Edificacion.objects.get(pk=pk)
         edificacion.delete()
         return Response({'Success':'La edificacion se ha eliminado'}, status=status.HTTP_204_NO_CONTENT)
 

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'inmuebleslist_app',
     'rest_framework',
+    'rest_framework.authtoken',
+    'user_app',
 ]
 
 MIDDLEWARE = [
@@ -132,7 +134,31 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #     }
 
 REST_FRAMEWORK = {
+    #basic es para que django tome el usuario y la clave como metodos para verificar el inicio de sesion
+    # 'DEFAULT_AUTHENTICATION_CLASSES': [
+    #     'rest_framework.authentication.BasicAuthentication',
+    #     ]
+    
+    #Token es para que django tome un token como metodo para verificar el inicio de sesion
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        ]
+        #'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        ],
+    #permite controlar la cantidad de solicitudes por usuario
+    # 'DEFAULT_THROTTLE_CLASSES': [
+    #     'rest_framework.throttling.AnonRateThrottle',
+    #     'rest_framework.throttling.UserRateThrottle',
+    #     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon':'5/day',
+        'user':'10/day',
+        'comentario-create': '2/day',
+        'comentario-list': '8/day',
+        'comentario-detail': '3/day',
+        }
+    
     }
+
+SIMPLE_JWT = {
+    'ROTATE_REFRESH_TOKEN': True
+}

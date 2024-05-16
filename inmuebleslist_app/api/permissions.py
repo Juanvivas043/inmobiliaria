@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 #permiso personalizado para el viewset de empresa, si el metodo es get va a mostar, si es post, put o delete, tiene que ser administrador para que se muestre
-class AdminOrReadOnly(permissions.IsAdminUser):
+class IsAdminOrReadOnly(permissions.IsAdminUser):
     def has_permission(self, request, view):
        if request.method == 'GET':
            return True
@@ -10,9 +10,9 @@ class AdminOrReadOnly(permissions.IsAdminUser):
    
    
    #permiso personalizado para la clase de ComentarioDetailAV, si el metodo es get lo deja listar, si es put o delete no se muestra a menos que sea el usuario que realizo el comentario
-class ComentarioUserOrReadOnly(permissions.BasePermission):
+class IsComentarioUserOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
-            return obj.comentario_user ==  request.user
+            return obj.comentario_user ==  request.user or request.user.is_staff

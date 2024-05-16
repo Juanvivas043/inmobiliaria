@@ -8,7 +8,13 @@ class ComentarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comentario
         fields = ['id', 'calificacion', 'texto', 'edificacion', 'active', 'fecha_creado', 'fecha_actualizado', 'comentario_user']
-        read_only_fields = ['id', 'edificacion', 'fecha_creado', 'fecha_actualizado', 'comentario_user']
+        extra_kwargs = {
+            'id': {'read_only':True}, 
+            'edificacion': {'read_only':True}, 
+            'fecha_creado': {'read_only':True}, 
+            'fecha_actualizado': {'read_only':True}, 
+            'comentario_user': {'read_only':True}
+        }
 
 class EdificacionSerializer(serializers.ModelSerializer):
     comentarios = ComentarioSerializer(many=True, read_only=True)
@@ -17,7 +23,14 @@ class EdificacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edificacion
         fields = ['id' ,'direccion', 'pais', 'descripcion', 'fecha_creado', 'active', 'empresa', 'comentarios', 'avg_calificacion', 'number_calificacion']
-        read_only_fields = ['id', 'fecha_creado', 'empresa', 'comentarios', 'avg_calificacion', 'number_calificacion']
+        extra_kwargs = {
+            'id': {'read_only':True}, 
+            'fecha_creado': {'read_only':True}, 
+            'comentarios': {'read_only':True},
+            'avg_calificacion': {'read_only':True},
+            'number_calificacion': {'read_only':True},
+        }
+        
         #fields = ['direccion', 'longitud_direccion' ,'pais', 'descripcion', 'imagen', 'fecha_creado', 'active']
         #exclude = ['id']
         
@@ -34,7 +47,11 @@ class EmpresaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
         fields = ['id', 'nombre', 'website', 'fecha_creado', 'active', 'edificacionlist']
-        read_only_fields = ['id', 'fecha_creado', 'edificacionlist']
+        extra_kwargs = {
+            'id': {'read_only':True}, 
+            'fecha_creado': {'read_only':True}, 
+            'edificacionlist': {'read_only':True}
+        }
         
 #Serializers usando modulo serializers
 
