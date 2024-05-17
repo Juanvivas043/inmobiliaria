@@ -19,10 +19,12 @@ class ComentarioSerializer(serializers.ModelSerializer):
 class EdificacionSerializer(serializers.ModelSerializer):
     comentarios = ComentarioSerializer(many=True, read_only=True)
     #longitud_direccion = serializers.SerializerMethodField()
+    empresa = serializers.StringRelatedField(read_only=True)
+    empresa_nombre = serializers.CharField(source='empresa.nombre')
     
     class Meta:
         model = Edificacion
-        fields = ['id' ,'direccion', 'pais', 'descripcion', 'fecha_creado', 'active', 'empresa', 'comentarios', 'avg_calificacion', 'number_calificacion']
+        fields = ['id' ,'direccion', 'pais', 'descripcion', 'fecha_creado', 'active', 'empresa', 'empresa_nombre','comentarios', 'avg_calificacion', 'number_calificacion']
         extra_kwargs = {
             'id': {'read_only':True}, 
             'fecha_creado': {'read_only':True}, 

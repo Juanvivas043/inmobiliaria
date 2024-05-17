@@ -11,7 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from inmuebleslist_app.api.permissions import IsAdminOrReadOnly, IsComentarioUserOrReadOnly
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle, ScopedRateThrottle
 from inmuebleslist_app.api.throttling import ComentarioCreateThrottle, ComentarioListThrottle
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from inmuebleslist_app.api.filters import ComentarioFilter
 
 
 #Clases con Modelviewset
@@ -107,18 +109,45 @@ from inmuebleslist_app.api.throttling import ComentarioCreateThrottle, Comentari
 #     #permission_classes = [ComentarioUserOrReadOnly]
 #     queryset = Comentario.objects.all()
 #     serializer_class = ComentarioSerializer
-    
-# Clases con Api Views
 
-class ComentarioListAV(APIView): 
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [ComentarioListThrottle, AnonRateThrottle]
+#filtro con apiviews
 
-    
-    def get(self, request, pk):
-        comentario = Comentario.objects.filter(edificacion=pk)
+class UsuarioComentario(APIView):
+    def get(self, request):
+        username = request.query_params.get('username', None)
+        comentario = Comentario.objects.filter(comentario_user__username=username)
+        #comentario = Comentario.objects.filter(comentario_user__username=username)
         serializer = ComentarioSerializer(comentario, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# Clases con Api Views
+
+# class ComentarioListAV(generics.ListAPIView): 
+#     #permission_classes = [IsAuthenticated]
+#     #throttle_classes = [ComentarioListThrottle, AnonRateThrottle]
+#     serializer_class=ComentarioSerializer
+#     filter_backends=[DjangoFilterBackend]
+#     filterset_fields=['comentario_user__username', 'active']
+    
+#     def get_queryset(self):
+#         pk=self.kwargs['pk']
+#         return Comentario.objects.filter(edificacion=pk)
+
+class ComentarioListAV(APIView):
+    # permission_classes = [IsAuthenticated]
+    # throttle_classes = [ComentarioListThrottle, AnonRateThrottle]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ComentarioFilter
+
+
+    def get(self, request, pk):
+        comentarios = Comentario.objects.all()
+        filter_backend = DjangoFilterBackend()
+        queryset = filter_backend.filter_queryset(request, comentarios, self)
+        
+        serializer = ComentarioSerializer(queryset, many=True)
+        return Response(serializer.data)
     
 class ComentarioCreateAV(APIView):
     permission_classes = [IsAuthenticated]
@@ -220,6 +249,13 @@ class EmpresaDetailAV(APIView):
         empresa = Empresa.objects.get(pk=pk)
         empresa.delete()
         return Response({'Success':'Se ha eliminado la empresa correctamente'}, status=status.HTTP_204_NO_CONTENT)
+
+class EdificacionList(generics.ListAPIView):
+    queryset = Edificacion.objects.all()
+    serializer_class = EdificacionSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter ]
+    search_fields = ['direccion', 'empresa__nombre']
+    
 
 class EdificacionListAV(APIView):
     permission_classes = [IsAdminOrReadOnly]
